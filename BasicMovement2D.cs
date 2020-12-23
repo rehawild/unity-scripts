@@ -1,28 +1,92 @@
-// Eren Darıcı
-
 using UnityEngine;
 
-public class PlayerMovement : MonoBehaviour
+public class PlayerScript : MonoBehaviour
 {
-    public float moveSpeed = 0.5f;
-    public float jumpForce = 0.5f;
-    public bool isGrounded = true; // bool variable for checking player's ground condition
+    [SerializeField] float movementSpeed = 0.3f;
+    [SerializeField] float jumpForce = 0.21f;
+    [SerializeField] bool isGrounded;
+    [SerializeField] bool onPlatform;
 
-    void Update()
+
+    SpriteRenderer spriteRenderer;
+    Rigidbody2D rb;
+    Animator animator;
+
+    void Start()
     {
-        Vector3 movement = new Vector3(Input.GetAxis("Horizontal"), 0f, 0f); // movement vector
-        transform.position += movement * Time.deltaTime * moveSpeed; // transforming position of player to move, multiplying with deltaTime in order to prevent frame issue
+        spriteRenderer = this.gameObject.GetComponent<SpriteRenderer>();
+        rb = this.gameObject.GetComponent<Rigidbody2D>();
+        animator = this.gameObject.GetComponent<Animator>();
+    }
+
+
+    void FixedUpdate()
+    {
+        animatonControl();
+        Movement();
         Jump();
     }
 
-    void Jump()
-    {   if (Input.GetButtonDown("Jump") && isGrounded == true) 
+    void Movement()
+    {
+        transform.position += new Vector3(Input.GetAxisRaw("Horizontal") * movementSpeed * Time.deltaTime, 0f, 0f);
+        if (Input.GetAxisRaw("Horizontal") != 0)
+            animator.SetBool("isRunning", true);
+        else
+            animator.SetBool("isRunning", false);
+
+        if (Input.GetAxisRaw("Horizontal") < 0)
         {
-            gameObject.GetComponent<Rigidbody2D>().AddForce(new Vector2(0f, jumpForce), ForceMode2D.Impulse); // adding impulse to player's rigidbody2d component
+            spriteRenderer.flipX = true;
+        }
+        if (Input.GetAxisRaw("Horizontal") > 0)
+        {
+            spriteRenderer.flipX = false;
         }
     }
 
+    void Jump()
+    {
+        if (Input.GetKey(KeyCode.W) && isGrounded || Input.GetKey(KeyCode.W) && onPlatform)
+        {
 
+            rb.AddForce(new Vector2(0f, jumpForce), ForceMode2D.Impulse);
+        }
+    }
 
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.collider.tag == "Ground")
+            isGrounded = true;
+        if (collision.collider.tag == "Platform")
+            onPlatform = true;
+    }
 
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.collider.tag == "Ground")
+            isGrounded = false;
+        if (collision.collider.tag == "Platform")
+            onPlatform = false;
+    }
+
+    void animatonControl()
+    {
+        if (rb.velocity.y > 0f)
+        {
+            animator.SetBool("isFalling", false);
+            animator.SetBool("isJumping", true);
+        }
+        if (rb.velocity.y < 0f)
+        {
+            animator.SetBool("isJumping", false);
+            animator.SetBool("isFalling", true);
+        }
+        if (rb.velocity.y == 0f)
+        {
+            animator.SetBool("isJumping", false);
+            animator.SetBool("isFalling", false);
+        }
+
+    }
 }
